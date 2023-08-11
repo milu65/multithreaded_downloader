@@ -7,7 +7,6 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 public class Downloader {
@@ -38,10 +37,11 @@ public class Downloader {
                 FileOutputStream fileOutputStream = new FileOutputStream(fileLocation);
                 BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(fileOutputStream);
         ){
-            int ch=-1;
-            while((ch=bufferedInputStream.read())!=-1){
-                bufferedOutputStream.write(ch);
-                downloadInfoThread.finishedSizeSec.addAndGet(1);
+            int len=-1;
+            byte []buffer=new byte[100*1024];
+            while((len=bufferedInputStream.read(buffer))!=-1){
+                bufferedOutputStream.write(buffer,0, len);
+                downloadInfoThread.finishedSizeSec.addAndGet(len);
             }
         } catch (FileNotFoundException e) {
             e.printStackTrace();
