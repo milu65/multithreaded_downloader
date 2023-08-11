@@ -5,13 +5,6 @@ import java.util.Scanner;
 
 public class Main {
 
-    public String multithreadedDownload(String url){
-
-        return "";
-    }
-
-
-
     public static void main(String[] args) {
         System.out.print("Input download url: ");
         Scanner sc=new Scanner(System.in);
@@ -23,6 +16,5 @@ public class Main {
 
         Downloader downloader = new Downloader();
         downloader.download(downloadUrl);
-//        System.out.println(resultFileLocation);
     }
 }

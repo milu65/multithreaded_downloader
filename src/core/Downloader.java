@@ -1,7 +1,6 @@
 package core;
 
 import constant.FileConstant;
-import constant.HTTPConstant;
 import utils.HttpUtils;
 
 import java.io.*;
