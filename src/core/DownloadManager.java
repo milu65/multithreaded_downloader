@@ -10,17 +10,10 @@ import java.util.List;
 import java.util.concurrent.*;
 
 public class DownloadManager {
-    private long sectionLength;
     private long size = 0;
     private String url;
-    private CountDownLatch countDownLatch;
 
-    public DownloadManager(String url) {
-        this(url, FileConstant.MB*25);
-    }
-
-    public DownloadManager(String url, long sectionLength){
-        this.sectionLength=sectionLength;
+    public DownloadManager(String url){
         this.url = url;
         HttpURLConnection connection = null;
         try {
@@ -77,14 +70,24 @@ public class DownloadManager {
     }
 
     public void multithreadedDownload(){
-        int numThread=(int)(size/sectionLength);
+        int numThread = 4;
+        int numSection = 20; //num of section should larger than num of thread
+        //TODO: (fix) For large file download sectionLength will be a really big number
+        // Imagine that the thread pool only has one remaining job
+        // with a few hundred megabytes to download and it's slow!
+        int sectionLength = (int)(size/numSection+1);
+        multithreadedDownload(numThread,sectionLength);
+    }
+
+    public void multithreadedDownload(int numThread, int sectionLength){
+        int numSection=(int)(size/sectionLength);
         if(size%sectionLength!=0){
-            numThread++;
+            numSection++;
         }
 
-        System.out.println("number of section: "+numThread+" section length (bytes): "+sectionLength);
+        System.out.println("number of section: "+numSection+" section length (bytes): "+sectionLength);
 
-        countDownLatch=new CountDownLatch(numThread);
+        CountDownLatch countDownLatch = new CountDownLatch(numSection);
 
         DownloadInfoStatsThread downloadInfoStatsThread = new DownloadInfoStatsThread(size);
         ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
@@ -92,17 +95,17 @@ public class DownloadManager {
 
         //Number of threads = Number of Available Cores * (1 + Wait time / Service time)
         ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(
-                11,
-                11,
+                numThread,
+                numThread,
                 30,
                 TimeUnit.SECONDS,
-                new ArrayBlockingQueue<>(200),
+                new LinkedBlockingDeque<>(),
                 new ThreadPoolExecutor.AbortPolicy());
 
         long offset=0;
-        for(int i=0;i<numThread;i++){
+        for(int i=0;i<numSection;i++){
             long end = offset+sectionLength-1;
-            if(i==numThread-1){
+            if(i==numSection-1){
                 end=size;
             }
             RangeDownloaderThread rangeDownloaderThread = new RangeDownloaderThread(
@@ -129,7 +132,7 @@ public class DownloadManager {
 
         ArrayList<String> sections = new ArrayList<>();
         offset=0;
-        for(int i=0;i<numThread;i++){
+        for(int i=0;i<numSection;i++){
             sections.add(String.valueOf(offset));
             offset+=sectionLength;
         }
